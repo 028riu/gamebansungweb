@@ -1,5 +1,7 @@
 'use strict';
 
+if(!document.querySelector('link[href="css/features.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='css/features.css';document.head.appendChild(l)}
+
 /* SECTOR ZERO — ESP / LINE / BOX / HEALTH
    Chỉ là hệ thống debug/cheat nội bộ của game, không tác động mạng. */
 window.SZESP = window.SZESP || { enabled:false, line:true, box:true, health:true, name:true };
