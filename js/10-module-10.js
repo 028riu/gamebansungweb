@@ -67,3 +67,12 @@ const MELEE = {
 function gunById(id) {
   return GUNS.find(g => g.id === id);
 }
+
+/* Modular weapon library: loaded before Player/HUD modules. */
+if (document.readyState === 'loading') {
+  const gunFiles = [
+    'burst-rifle.js','machine-pistol.js','hand-cannon.js','carbine.js','marksman.js',
+    'minigun.js','scatter-cannon.js','cryo-rifle.js','arc-rifle.js','void-cannon.js','grenade-launcher.js'
+  ];
+  for (const file of gunFiles) document.write('<script src="js/guns/'+file+'"><\\/script>');
+}
