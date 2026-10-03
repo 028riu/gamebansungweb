@@ -19,79 +19,65 @@ jobs:
           python3 <<'PY'
           from pathlib import Path
           import re
-          
+
           root = Path('.')
           src = root / 'index.html'
           text = src.read_text(encoding='utf-8')
-          
-          styles = re.findall(r'<style\\b[^>]*>(.*?)</style>', text, flags=re.S|re.I)
-          scripts = re.findall(r'<script\\b[^>]*>(.*?)</script>', text, flags=re.S|re.I)
-          
+
+          styles = re.findall(r'<style\b[^>]*>(.*?)</style>', text, flags=re.S|re.I)
+          scripts = re.findall(r'<script\b[^>]*>(.*?)</script>', text, flags=re.S|re.I)
           if not styles:
               raise SystemExit('No <style> block found in index.html')
           if not scripts:
               raise SystemExit('No <script> block found in index.html')
-          
+
           main_js = max(scripts, key=len)
-          
-          # Keep the original source as a backup outside the public app path.
+
           backup = root / 'backup'
           backup.mkdir(exist_ok=True)
           (backup / 'source-latest.html').write_text(text, encoding='utf-8')
-          
+
           css_dir = root / 'css'
           js_dir = root / 'js'
           css_dir.mkdir(exist_ok=True)
           js_dir.mkdir(exist_ok=True)
-          
-          # One clean CSS file from the source.
-          (css_dir / 'style.css').write_text('\\n\\n'.join(styles).strip() + '\\n', encoding='utf-8')
-          
-          # Existing numbered section comments are the source's natural module boundaries.
-          marker = re.compile(r'/\\*\\s*=+\\s*\\[(\\d+)\\]\\s*([^\\n*]+).*?\\*/', re.S)
+          (css_dir / 'style.css').write_text('\n\n'.join(styles).strip() + '\n', encoding='utf-8')
+
+          marker = re.compile(r'/\*\s*=+\s*\[(\d+)\]\s*([^\n*]+).*?\*/', re.S)
           matches = list(marker.finditer(main_js))
-          
           if len(matches) < 10:
               raise SystemExit(f'Only {len(matches)} JS sections detected; refusing to produce a broken split.')
-          
-          used = set()
+
+          names = []
           for i, m in enumerate(matches):
               num = int(m.group(1))
               title = m.group(2).strip()
               start = m.start()
               end = matches[i+1].start() if i + 1 < len(matches) else len(main_js)
               body = main_js[start:end].strip()
-              safe = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-') or f'module-{num}'
-              filename = f'{num:02d}-{safe}.js'
-              if filename in used:
-                  filename = f'{num:02d}-module-{num}.js'
-              used.add(filename)
-              (js_dir / filename).write_text("'use strict';\\n\\n" + body + '\\n', encoding='utf-8')
-          
-          # Remove embedded CSS/JS from HTML and reference the generated files.
-          html = re.sub(r'<style\\b[^>]*>.*?</style>', '', text, flags=re.S|re.I)
-          html = re.sub(r'<script\\b[^>]*>.*?</script>', '', html, flags=re.S|re.I)
-          
-          link = '  <link rel="stylesheet" href="css/style.css">\\n'
-          html = re.sub(r'</head>', link + '</head>', html, count=1, flags=re.I)
-          
-          js_tags = '\\n'.join(
-              f'  <script src="js/{p.name}"></script>'
-              for p in sorted(js_dir.glob('*.js'))
-          )
-          html = re.sub(r'</body>', js_tags + '\\n</body>', html, count=1, flags=re.I)
+              # ASCII-only stable filenames; do not use Vietnamese titles in filenames.
+              filename = f'{num:02d}-module-{num}.js'
+              (js_dir / filename).write_text("'use strict';\n\n" + body + '\n', encoding='utf-8')
+              names.append(filename)
+
+          html = re.sub(r'<style\b[^>]*>.*?</style>', '', text, flags=re.S|re.I)
+          html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.S|re.I)
+          html = re.sub(r'</head>', '  <link rel="stylesheet" href="css/style.css">\n</head>', html, count=1, flags=re.I)
+          tags = '\n'.join(f'  <script src="js/{name}"></script>' for name in names)
+          html = re.sub(r'</body>', tags + '\n</body>', html, count=1, flags=re.I)
           src.write_text(html, encoding='utf-8')
-          
-          # Remove old generated JS/CSS files that are not part of this run.
-          keep_js = {p.name for p in js_dir.glob('*.js')}
-          for p in js_dir.glob('*'):
-              if p.is_file() and p.name not in keep_js:
+
+          # Remove old generated JS files so the folder contains only this split.
+          keep = set(names)
+          for p in js_dir.glob('*.js'):
+              if p.name not in keep:
                   p.unlink()
-          
-          # Simple structural checks.
-          if '<style' in html.lower() or '<script>' in html.lower():
-              raise SystemExit('Embedded style/script remained in index.html')
-          if len(list(js_dir.glob('*.js'))) != len(matches):
+
+          if '<style' in html.lower():
+              raise SystemExit('Embedded style remained in index.html')
+          if re.search(r'<script\s*>', html, re.I):
+              raise SystemExit('Embedded script remained in index.html')
+          if len(names) != len(matches):
               raise SystemExit('JS module count mismatch')
           PY
 
