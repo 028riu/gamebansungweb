@@ -1,0 +1,5 @@
+/* SECTOR ZERO feature layer */
+#sz-runhud{z-index:35}
+.sz-hack-toggle[data-esp],#sz-terminal .sz-hack-toggle{user-select:none}
+#sz-terminal .sz-hack-toggle input{accent-color:#a8ed89}
+#sz-terminal .sz-hack-state.on{color:#a8ed89;text-shadow:0 0 8px rgba(168,237,137,.45)}
