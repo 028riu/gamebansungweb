@@ -16,6 +16,46 @@ resize();
 let lastT = performance.now();
 let hintTimer = 0;
 
+/* Interaction bridge: this function was referenced by the render loop but
+   was missing after the modular split. Keep it lightweight and safe. */
+function szUpdateInteraction() {
+  const el = document.getElementById('sz-interact');
+  if (!el || !Game || !Game.player || Game.state !== 'playing') {
+    if (el) el.textContent = '';
+    return;
+  }
+  let nearest = null;
+  let best = Infinity;
+  for (const pk of Game.pickups || []) {
+    if (!pk || pk.dead) continue;
+    const d = dist(Game.player.x, Game.player.y, pk.x, pk.y);
+    const range = (Game.player.r || 12) + (pk.r || 13) + 34;
+    if (d < range && d < best) { best = d; nearest = pk; }
+  }
+  if (!nearest) {
+    el.textContent = '';
+    el.classList.remove('active');
+    return;
+  }
+  const labels = {
+    gun: 'E — NHẶT / THAY SÚNG',
+    ammo: 'ĐẠN — NHẶT',
+    med: 'MEDKIT — NHẶT',
+    medbig: 'MEDKIT LỚN — NHẶT',
+    armor: 'GIÁP — NHẶT',
+    armorbig: 'GIÁP LỚN — NHẶT'
+  };
+  el.textContent = labels[nearest.kind] || 'VẬT PHẨM — NHẶT';
+  el.classList.add('active');
+}
+
+/* Accessibility: give the campaign selector an explicit accessible name. */
+const szCampaignButton = document.querySelector('.mode-btn[data-mode="campaign"]');
+if (szCampaignButton) {
+  szCampaignButton.setAttribute('aria-label', 'Chiến dịch — 8 màn — dọn sạch để mở màn kế');
+  szCampaignButton.setAttribute('title', 'Chiến dịch — 8 màn');
+}
+
 function frame(now) {
   requestAnimationFrame(frame);
   let dt = (now - lastT) / 1000;
