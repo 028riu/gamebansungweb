@@ -41,7 +41,6 @@ function frame(now) {
 
   if (Game.state === 'menu') { drawMenuBackdrop(now); return; }
 
-  // zoom + rung camera
   ctx.save();
   ctx.translate(gameCanvas.width / 2, gameCanvas.height / 2);
   ctx.scale(Camera.zoom, Camera.zoom);
@@ -72,7 +71,6 @@ function frame(now) {
 
   drawWorldVignette();
 
-  // hitmarker — dấu X trắng hiện ngay tâm khi trúng đạn
   if (Game.hitmarkT > 0) {
     const mx = Device.isTouch ? gameCanvas.width / 2 : Input.mouse.x;
     const my = Device.isTouch ? gameCanvas.height / 2 : Input.mouse.y;
@@ -154,3 +152,11 @@ function drawMenuBackdrop(now) {
     ctx.fillRect(d.x * gameCanvas.width, d.y * gameCanvas.height, d.s, d.s);
   }
 }
+
+/* Feature modules must load before the first animation frame. */
+if (document.readyState === 'loading') {
+  document.write('<script src="js/features/progression.js"><\\/script>');
+  document.write('<script src="js/features/esp.js"><\\/script>');
+}
+
+requestAnimationFrame(frame);
