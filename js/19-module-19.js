@@ -157,6 +157,7 @@ function drawMenuBackdrop(now) {
 if (document.readyState === 'loading') {
   document.write('<script src="js/features/progression.js"><\\/script>');
   document.write('<script src="js/features/esp.js"><\\/script>');
+  document.write('<script src="js/features/weapon-drops.js"><\\/script>');
 }
 
 requestAnimationFrame(frame);
